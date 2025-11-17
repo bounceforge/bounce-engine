@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bounce Engine - Particle Effects Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            font-family: Arial, sans-serif;
+        }
+        #gameContainer {
+            background: #0a0a0a;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h1>✨ Particle Effects Demo</h1>
+        <div>
+            <strong>Click anywhere to create effects!</strong><br>
+            Different particle systems showcase<br>
+            various effects and behaviors.
+        </div>
+    </div>
+    <div id="gameContainer"></div>
+
+    <script type="module">
+        import { 
+            Engine, Scene, GameObject,
+            ParticleEmitter, Input, TextRenderer
+        } from '../src/index.js';
+
+        // Create engine
+        const engine = new Engine({
+            width: 800,
+            height: 600,
+            backgroundColor: '#0a0a0a',
+            parent: document.getElementById('gameContainer')
+        });
+
+        // Create scene
+        const scene = new Scene('particles');
+        scene.input = new Input(engine.canvas);
+
+        // Create preset particle emitters
+        
+        // 1. Fire effect
+        const fire = new GameObject(150, 500);
+        fire.addComponent(new ParticleEmitter({
+            emissionRate: 50,
+            maxParticles: 200,
+            particleLifetime: 1.5,
+            particleLifetimeVariance: 0.5,
+            startVelocity: { x: 0, y: -100 },
+            velocityVariance: { x: 30, y: 20 },
+            acceleration: { x: 0, y: -50 },
+            startColor: '#ff4500',
+            endColor: '#ffd700',
+            startSize: 12,
+            endSize: 0,
+            startAlpha: 1,
+            endAlpha: 0,
+            emissionShape: 'circle',
+            emissionRadius: 20
+        }));
+        scene.add(fire);
+
+        // Fire label
+        const fireLabel = new GameObject(150, 550);
+        fireLabel.addComponent(new TextRenderer('Fire', {
+            font: '16px Arial',
+            color: '#ff4500',
+            align: 'center'
+        }));
+        scene.add(fireLabel);
+
+        // 2. Smoke effect
+        const smoke = new GameObject(350, 500);
+        smoke.addComponent(new ParticleEmitter({
+            emissionRate: 20,
+            maxParticles: 100,
+            particleLifetime: 3,
+            particleLifetimeVariance: 1,
+            startVelocity: { x: 0, y: -50 },
+            velocityVariance: { x: 20, y: 10 },
+            acceleration: { x: 10, y: -20 },
+            startColor: '#555555',
+            endColor: '#111111',
+            startSize: 15,
+            endSize: 30,
+            startAlpha: 0.8,
+            endAlpha: 0,
+            emissionShape: 'circle',
+            emissionRadius: 15
+        }));
+        scene.add(smoke);
+
+        const smokeLabel = new GameObject(350, 550);
+        smokeLabel.addComponent(new TextRenderer('Smoke', {
+            font: '16px Arial',
+            color: '#888888',
+            align: 'center'
+        }));
+        scene.add(smokeLabel);
+
+        // 3. Sparkles
+        const sparkles = new GameObject(550, 500);
+        sparkles.addComponent(new ParticleEmitter({
+            emissionRate: 30,
+            maxParticles: 150,
+            particleLifetime: 1,
+            particleLifetimeVariance: 0.3,
+            startVelocity: { x: 0, y: -80 },
+            velocityVariance: { x: 50, y: 40 },
+            acceleration: { x: 0, y: 100 },
+            startColor: '#ffff00',
+            endColor: '#ffffff',
+            startSize: 6,
+            endSize: 2,
+            startAlpha: 1,
+            endAlpha: 0,
+            rotationSpeed: 5,
+            rotationVariance: 3,
+            emissionShape: 'point'
+        }));
+        scene.add(sparkles);
+
+        const sparklesLabel = new GameObject(550, 550);
+        sparklesLabel.addComponent(new TextRenderer('Sparkles', {
+            font: '16px Arial',
+            color: '#ffff00',
+            align: 'center'
+        }));
+        scene.add(sparklesLabel);
+
+        // 4. Fountain
+        const fountain = new GameObject(400, 300);
+        const fountainEmitter = fountain.addComponent(new ParticleEmitter({
+            emissionRate: 100,
+            maxParticles: 300,
+            particleLifetime: 2,
+            particleLifetimeVariance: 0.5,
+            startVelocity: { x: 0, y: -200 },
+            velocityVariance: { x: 100, y: 50 },
+            acceleration: { x: 0, y: 300 },
+            startColor: '#00ffff',
+            endColor: '#0088ff',
+            startSize: 8,
+            endSize: 4,
+            startAlpha: 1,
+            endAlpha: 0.5,
+            emissionShape: 'circle',
+            emissionRadius: 5
+        }));
+        scene.add(fountain);
+
+        const fountainLabel = new GameObject(400, 250);
+        fountainLabel.addComponent(new TextRenderer('Fountain', {
+            font: '20px Arial',
+            color: '#00ffff',
+            align: 'center'
+        }));
+        scene.add(fountainLabel);
+
+        // Title
+        const title = new GameObject(400, 50);
+        title.addComponent(new TextRenderer('Click to Create Explosions!', {
+            font: 'bold 28px Arial',
+            color: '#ffffff',
+            align: 'center',
+            stroke: true,
+            strokeColor: '#000000',
+            strokeWidth: 3
+        }));
+        scene.add(title);
+
+        // Mouse click handler for explosions
+        let clickCount = 0;
+        const clickCountDisplay = new GameObject(400, 100);
+        const clickCountText = clickCountDisplay.addComponent(new TextRenderer('Explosions: 0', {
+            font: '18px Arial',
+            color: '#ffa500',
+            align: 'center'
+        }));
+        scene.add(clickCountDisplay);
+
+        // Custom update
+        const originalUpdate = scene.update.bind(scene);
+        scene.update = function(dt) {
+            scene.input.update();
+            
+            // Create explosion on click
+            if (scene.input.isMouseButtonPressed(0)) {
+                const mouseX = scene.input.mouse.x;
+                const mouseY = scene.input.mouse.y;
+                
+                // Create temporary explosion
+                const explosion = new GameObject(mouseX, mouseY);
+                const explosionEmitter = explosion.addComponent(new ParticleEmitter({
+                    autoEmit: true,
+                    emissionRate: 1000,
+                    maxParticles: 100,
+                    particleLifetime: 1,
+                    particleLifetimeVariance: 0.3,
+                    startVelocity: { x: 0, y: 0 },
+                    velocityVariance: { x: 200, y: 200 },
+                    acceleration: { x: 0, y: 100 },
+                    startColor: '#ff6b6b',
+                    endColor: '#feca57',
+                    startSize: 10,
+                    endSize: 2,
+                    startAlpha: 1,
+                    endAlpha: 0,
+                    emissionShape: 'point'
+                }));
+                
+                scene.add(explosion);
+                
+                // Emit burst and remove after delay
+                explosionEmitter.emit(50);
+                explosionEmitter.autoEmit = false;
+                
+                setTimeout(() => {
+                    explosion.destroy();
+                }, 2000);
+                
+                clickCount++;
+                clickCountText.text = `Explosions: ${clickCount}`;
+            }
+            
+            originalUpdate(dt);
+        };
+
+        // Add scene and start
+        engine.addScene('particles', scene);
+        engine.setScene('particles');
+        engine.start();
+
+        console.log('✨ Particle Effects Demo Started!');
+    </script>
+</body>
+</html>

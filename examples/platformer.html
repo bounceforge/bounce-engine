@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bounce Engine - Platformer Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: Arial, sans-serif;
+        }
+        #gameContainer {
+            background: #1a1a2e;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+        .controls {
+            margin-top: 10px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h1>🎮 Platformer Demo</h1>
+        <div class="controls">
+            <strong>Controls:</strong><br>
+            A/D or ← → : Move<br>
+            Space or W : Jump<br>
+            Space (air) : Double Jump<br>
+            Space (wall) : Wall Jump
+        </div>
+    </div>
+    <div id="gameContainer"></div>
+
+    <script type="module">
+        import { 
+            Engine, Scene, GameObject, Camera,
+            SpriteRenderer, BoxCollider, RigidBody, 
+            PlatformerController, Physics, Input,
+            TextRenderer, ParticleEmitter, Debug
+        } from '../src/index.js';
+
+        // Create engine
+        const engine = new Engine({
+            width: 800,
+            height: 600,
+            backgroundColor: '#0f0f1e',
+            parent: document.getElementById('gameContainer')
+        });
+
+        // Create scene
+        const scene = new Scene('platformer');
+        scene.physics = new Physics(scene);
+        scene.input = new Input(engine.canvas);
+
+        // Create camera
+        const camera = new Camera(0, 0, 800, 600);
+        camera.setBounds(-100, -100, 2000, 800);
+        scene.camera = camera;
+
+        // Create player
+        const player = new GameObject(100, 300);
+        player.name = 'player';
+        player.tag = 'player';
+        
+        const playerSprite = player.addComponent(new SpriteRenderer({
+            width: 32,
+            height: 48,
+            color: '#ff6b6b',
+            offset: { x: -16, y: -24 }
+        }));
+        
+        const playerCollider = player.addComponent(new BoxCollider(28, 48));
+        const playerRb = player.addComponent(new RigidBody({
+            mass: 1,
+            gravityScale: 1,
+            drag: 0.05
+        }));
+        
+        player.addComponent(new PlatformerController({
+            moveSpeed: 200,
+            jumpForce: 450,
+            canDoubleJump: true,
+            canWallJump: true,
+            airControl: 0.7
+        }));
+
+        // Add jump particle effect
+        const jumpParticles = player.addComponent(new ParticleEmitter({
+            autoEmit: false,
+            maxParticles: 20,
+            particleLifetime: 0.5,
+            startVelocity: { x: 0, y: 100 },
+            velocityVariance: { x: 100, y: 50 },
+            startColor: '#ff6b6b',
+            endColor: '#feca57',
+            startSize: 6,
+            endSize: 0,
+            startAlpha: 1,
+            endAlpha: 0
+        }));
+
+        scene.add(player);
+        scene.physics.addCollider(playerCollider);
+
+        // Follow player with camera
+        camera.follow(player, 0.1);
+
+        // Create platforms
+        const platforms = [
+            { x: 400, y: 550, width: 800, height: 100 }, // Ground
+            { x: 200, y: 450, width: 150, height: 20 },
+            { x: 450, y: 400, width: 150, height: 20 },
+            { x: 700, y: 350, width: 150, height: 20 },
+            { x: 950, y: 300, width: 150, height: 20 },
+            { x: 1200, y: 400, width: 150, height: 20 },
+            { x: 1450, y: 450, width: 200, height: 20 },
+            { x: 100, y: 250, width: 120, height: 20 },
+            { x: 300, y: 200, width: 100, height: 20 },
+            { x: 1100, y: 150, width: 150, height: 20 },
+            // Walls for wall jump practice
+            { x: 580, y: 300, width: 20, height: 200 },
+            { x: 850, y: 200, width: 20, height: 250 },
+        ];
+
+        platforms.forEach((p, i) => {
+            const platform = new GameObject(p.x, p.y);
+            platform.name = `platform_${i}`;
+            platform.tag = 'ground';
+            
+            platform.addComponent(new SpriteRenderer({
+                width: p.width,
+                height: p.height,
+                color: p.height > 50 ? '#2d4a2e' : '#3d5a3e',
+                offset: { x: -p.width / 2, y: -p.height / 2 }
+            }));
+            
+            const collider = platform.addComponent(new BoxCollider(p.width, p.height));
+            scene.physics.addCollider(collider);
+            scene.add(platform);
+        });
+
+        // Create collectibles
+        for (let i = 0; i < 10; i++) {
+            const coin = new GameObject(300 + i * 150, 350 - Math.random() * 200);
+            coin.name = `coin_${i}`;
+            coin.tag = 'coin';
+            
+            coin.addComponent(new SpriteRenderer({
+                width: 20,
+                height: 20,
+                color: '#f1c40f',
+                offset: { x: -10, y: -10 }
+            }));
+            
+            const coinCollider = coin.addComponent(new BoxCollider(20, 20));
+            coinCollider.isTrigger = true;
+            coinCollider.onCollisionEnter = (other) => {
+                if (other === playerCollider) {
+                    coin.destroy();
+                    camera.shake(5, 0.1);
+                    score++;
+                    scoreText.text = `Score: ${score}`;
+                }
+            };
+            
+            scene.physics.addCollider(coinCollider);
+            scene.add(coin);
+            
+            // Animate coin
+            coin.update = (dt) => {
+                coin.y += Math.sin(Date.now() * 0.003 + i) * 0.5;
+                coin.rotation += dt * 2;
+            };
+        }
+
+        // Score display
+        let score = 0;
+        const scoreDisplay = new GameObject(50, 50);
+        const scoreText = scoreDisplay.addComponent(new TextRenderer(`Score: ${score}`, {
+            font: '24px Arial',
+            color: '#ffffff',
+            align: 'left',
+            baseline: 'top'
+        }));
+        scene.add(scoreDisplay);
+
+        // FPS display
+        const fpsDisplay = new GameObject(750, 50);
+        const fpsText = fpsDisplay.addComponent(new TextRenderer('FPS: 60', {
+            font: '20px Arial',
+            color: '#4ecdc4',
+            align: 'right',
+            baseline: 'top'
+        }));
+        scene.add(fpsDisplay);
+
+        // Track jump for particles
+        let wasGrounded = false;
+
+        // Custom scene update
+        const originalUpdate = scene.update.bind(scene);
+        scene.update = function(dt) {
+            // Update input
+            scene.input.update(camera);
+            
+            // Update camera
+            camera.update(dt);
+            
+            // Reset physics state
+            playerRb.isGrounded = false;
+            playerRb.isTouchingWall = false;
+            
+            // Detect collisions
+            scene.physics.detectCollisions();
+            
+            // Emit particles on jump
+            if (wasGrounded && !playerRb.isGrounded && playerRb.velocityY < 0) {
+                jumpParticles.emit(10);
+            }
+            wasGrounded = playerRb.isGrounded;
+            
+            // Update game objects
+            originalUpdate(dt);
+            
+            // Update FPS
+            fpsText.text = `FPS: ${engine.fps}`;
+            
+            // Update score display position (UI doesn't move with camera)
+            const worldPos = camera.screenToWorld(50, 50);
+            scoreDisplay.x = worldPos.x;
+            scoreDisplay.y = worldPos.y;
+            
+            const fpsWorldPos = camera.screenToWorld(750, 50);
+            fpsDisplay.x = fpsWorldPos.x;
+            fpsDisplay.y = fpsWorldPos.y;
+        };
+
+        // Add scene and start
+        engine.addScene('platformer', scene);
+        engine.setScene('platformer');
+        engine.start();
+
+        console.log('🎮 Platformer Demo Started!');
+        console.log('Player controls: A/D to move, Space to jump');
+    </script>
+</body>
+</html>

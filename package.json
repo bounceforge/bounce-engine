@@ -1,0 +1,28 @@
+{
+  "name": "bounce-engine",
+  "version": "1.0.0",
+  "description": "A lightweight, powerful, pure JavaScript 2D game engine",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "serve": "python3 -m http.server 8000"
+  },
+  "keywords": [
+    "game-engine",
+    "javascript",
+    "2d",
+    "canvas",
+    "platformer",
+    "top-down",
+    "physics",
+    "particles",
+    "animation"
+  ],
+  "author": "Bounce Engine Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bounceforge/bounce-engine.git"
+  },
+  "homepage": "https://github.com/bounceforge/bounce-engine#readme"
+}

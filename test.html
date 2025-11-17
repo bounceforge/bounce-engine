@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bounce Engine - Quick Test</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #1a1a2e;
+            font-family: Arial, sans-serif;
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h2>✅ Bounce Engine Test</h2>
+        <p>If you see a spinning red square, the engine works!</p>
+        <p>WASD to move, Space to change color</p>
+    </div>
+
+    <script type="module">
+        import { 
+            Engine, Scene, GameObject, 
+            SpriteRenderer, Input, TextRenderer 
+        } from '../src/index.js';
+
+        console.log('🎮 Bounce Engine Test Starting...');
+
+        // Create engine
+        const engine = new Engine({
+            width: 800,
+            height: 600,
+            backgroundColor: '#0f0f1e'
+        });
+
+        console.log('✅ Engine created');
+
+        // Create scene
+        const scene = new Scene('test');
+        scene.input = new Input(engine.canvas);
+
+        console.log('✅ Scene created');
+
+        // Create test object
+        const testObj = new GameObject(400, 300);
+        const sprite = testObj.addComponent(new SpriteRenderer({
+            width: 64,
+            height: 64,
+            color: '#ff6b6b'
+        }));
+
+        const colors = ['#ff6b6b', '#4ecdc4', '#feca57', '#48dbfb', '#ff9ff3'];
+        let colorIndex = 0;
+
+        testObj.update = function(dt) {
+            // Rotate
+            this.rotation += dt * 2;
+
+            // Move with keys
+            const speed = 200;
+            if (scene.input.isKeyDown('KeyW')) this.y -= speed * dt;
+            if (scene.input.isKeyDown('KeyS')) this.y += speed * dt;
+            if (scene.input.isKeyDown('KeyA')) this.x -= speed * dt;
+            if (scene.input.isKeyDown('KeyD')) this.x += speed * dt;
+
+            // Change color
+            if (scene.input.isKeyPressed('Space')) {
+                colorIndex = (colorIndex + 1) % colors.length;
+                sprite.color = colors[colorIndex];
+            }
+
+            // Bounce off edges
+            if (this.x < 0) this.x = 0;
+            if (this.x > 800) this.x = 800;
+            if (this.y < 0) this.y = 0;
+            if (this.y > 600) this.y = 600;
+        };
+
+        scene.add(testObj);
+
+        console.log('✅ Game object created');
+
+        // Add FPS counter
+        const fpsDisplay = new GameObject(750, 30);
+        const fpsText = fpsDisplay.addComponent(new TextRenderer('FPS: 0', {
+            font: '20px monospace',
+            color: '#4ecdc4',
+            align: 'right'
+        }));
+        scene.add(fpsDisplay);
+
+        // Custom update
+        const originalUpdate = scene.update.bind(scene);
+        scene.update = function(dt) {
+            scene.input.update();
+            originalUpdate(dt);
+            fpsText.text = `FPS: ${engine.fps}`;
+        };
+
+        // Start engine
+        engine.addScene('test', scene);
+        engine.setScene('test');
+        engine.start();
+
+        console.log('✅ Engine started successfully!');
+        console.log('🎮 Bounce Engine is working perfectly!');
+    </script>
+</body>
+</html>

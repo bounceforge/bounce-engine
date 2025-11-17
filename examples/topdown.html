@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bounce Engine - Top-Down Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            font-family: Arial, sans-serif;
+        }
+        #gameContainer {
+            background: #1a1a2e;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+        .controls {
+            margin-top: 10px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h1>🗺️ Top-Down Demo</h1>
+        <div class="controls">
+            <strong>Controls:</strong><br>
+            WASD or Arrow Keys : Move<br>
+            Shift : Dash<br>
+            Move around and collect items!
+        </div>
+    </div>
+    <div id="gameContainer"></div>
+
+    <script type="module">
+        import { 
+            Engine, Scene, GameObject, Camera,
+            SpriteRenderer, BoxCollider, CircleCollider, RigidBody, 
+            TopDownController, Physics, Input,
+            TextRenderer, ParticleEmitter, Tilemap
+        } from '../src/index.js';
+
+        // Create engine
+        const engine = new Engine({
+            width: 800,
+            height: 600,
+            backgroundColor: '#16213e',
+            parent: document.getElementById('gameContainer')
+        });
+
+        // Create scene
+        const scene = new Scene('topdown');
+        scene.physics = new Physics(scene);
+        scene.physics.gravity = 0; // No gravity for top-down
+        scene.input = new Input(engine.canvas);
+
+        // Create camera
+        const camera = new Camera(0, 0, 800, 600);
+        scene.camera = camera;
+
+        // Create player
+        const player = new GameObject(400, 300);
+        player.name = 'player';
+        player.tag = 'player';
+        
+        const playerSprite = player.addComponent(new SpriteRenderer({
+            width: 32,
+            height: 32,
+            color: '#4ecdc4',
+            offset: { x: -16, y: -16 }
+        }));
+        
+        const playerCollider = player.addComponent(new CircleCollider(16));
+        const playerRb = player.addComponent(new RigidBody({
+            mass: 1,
+            useGravity: false,
+            drag: 0.1
+        }));
+        
+        player.addComponent(new TopDownController({
+            moveSpeed: 250,
+            canDash: true,
+            dashSpeed: 600,
+            dashDuration: 0.15,
+            dashCooldown: 0.8
+        }));
+
+        // Dash trail effect
+        const dashTrail = player.addComponent(new ParticleEmitter({
+            autoEmit: false,
+            maxParticles: 50,
+            particleLifetime: 0.3,
+            emissionRate: 100,
+            startVelocity: { x: 0, y: 0 },
+            velocityVariance: { x: 50, y: 50 },
+            startColor: '#4ecdc4',
+            endColor: '#1a1a2e',
+            startSize: 16,
+            endSize: 4,
+            startAlpha: 0.8,
+            endAlpha: 0
+        }));
+
+        scene.add(player);
+        scene.physics.addCollider(playerCollider);
+
+        // Follow player with camera
+        camera.follow(player, 0.08);
+        camera.setBounds(0, 0, 1600, 1200);
+
+        // Create world boundaries
+        const walls = [
+            { x: 800, y: 10, width: 1600, height: 20 },    // Top
+            { x: 800, y: 1190, width: 1600, height: 20 },  // Bottom
+            { x: 10, y: 600, width: 20, height: 1200 },    // Left
+            { x: 1590, y: 600, width: 20, height: 1200 }   // Right
+        ];
+
+        walls.forEach((w, i) => {
+            const wall = new GameObject(w.x, w.y);
+            wall.name = `wall_${i}`;
+            wall.tag = 'wall';
+            
+            wall.addComponent(new SpriteRenderer({
+                width: w.width,
+                height: w.height,
+                color: '#0f3460',
+                offset: { x: -w.width / 2, y: -w.height / 2 }
+            }));
+            
+            const collider = wall.addComponent(new BoxCollider(w.width, w.height));
+            scene.physics.addCollider(collider);
+            scene.add(wall);
+        });
+
+        // Create obstacles/buildings
+        const obstacles = [
+            { x: 300, y: 200, width: 150, height: 100 },
+            { x: 600, y: 250, width: 100, height: 150 },
+            { x: 900, y: 350, width: 200, height: 80 },
+            { x: 1200, y: 200, width: 120, height: 120 },
+            { x: 400, y: 500, width: 180, height: 100 },
+            { x: 800, y: 600, width: 100, height: 200 },
+            { x: 1100, y: 700, width: 150, height: 150 },
+            { x: 200, y: 800, width: 100, height: 100 },
+            { x: 500, y: 900, width: 200, height: 120 },
+            { x: 1300, y: 850, width: 150, height: 180 }
+        ];
+
+        obstacles.forEach((o, i) => {
+            const obstacle = new GameObject(o.x, o.y);
+            obstacle.name = `obstacle_${i}`;
+            obstacle.tag = 'obstacle';
+            
+            obstacle.addComponent(new SpriteRenderer({
+                width: o.width,
+                height: o.height,
+                color: '#e94560',
+                offset: { x: -o.width / 2, y: -o.height / 2 }
+            }));
+            
+            const collider = obstacle.addComponent(new BoxCollider(o.width, o.height));
+            scene.physics.addCollider(collider);
+            scene.add(obstacle);
+        });
+
+        // Create collectible items scattered around
+        let itemsCollected = 0;
+        const totalItems = 20;
+        
+        for (let i = 0; i < totalItems; i++) {
+            let x, y, validPosition = false;
+            
+            // Find a valid spawn position (not inside obstacles)
+            while (!validPosition) {
+                x = 100 + Math.random() * 1400;
+                y = 100 + Math.random() * 1000;
+                validPosition = true;
+                
+                // Check against obstacles
+                for (const o of obstacles) {
+                    if (Math.abs(x - o.x) < o.width / 2 + 50 &&
+                        Math.abs(y - o.y) < o.height / 2 + 50) {
+                        validPosition = false;
+                        break;
+                    }
+                }
+            }
+            
+            const item = new GameObject(x, y);
+            item.name = `item_${i}`;
+            item.tag = 'item';
+            
+            item.addComponent(new SpriteRenderer({
+                width: 24,
+                height: 24,
+                color: '#ffd93d',
+                offset: { x: -12, y: -12 }
+            }));
+            
+            const itemCollider = item.addComponent(new CircleCollider(12));
+            itemCollider.isTrigger = true;
+            itemCollider.onCollisionEnter = (other) => {
+                if (other === playerCollider) {
+                    item.destroy();
+                    itemsCollected++;
+                    itemsText.text = `Items: ${itemsCollected}/${totalItems}`;
+                    camera.shake(3, 0.1);
+                    
+                    if (itemsCollected === totalItems) {
+                        winText.text = '🎉 YOU WIN! 🎉';
+                    }
+                }
+            };
+            
+            scene.physics.addCollider(itemCollider);
+            scene.add(item);
+            
+            // Animate item
+            const baseY = y;
+            item.update = (dt) => {
+                item.y = baseY + Math.sin(Date.now() * 0.003 + i) * 8;
+                item.rotation += dt * 2;
+            };
+        }
+
+        // UI - Items collected
+        const itemsDisplay = new GameObject(50, 50);
+        const itemsText = itemsDisplay.addComponent(new TextRenderer(
+            `Items: ${itemsCollected}/${totalItems}`, {
+            font: '24px Arial',
+            color: '#ffd93d',
+            align: 'left',
+            baseline: 'top'
+        }));
+        scene.add(itemsDisplay);
+
+        // UI - Win message
+        const winDisplay = new GameObject(400, 300);
+        const winText = winDisplay.addComponent(new TextRenderer('', {
+            font: 'bold 48px Arial',
+            color: '#4ecdc4',
+            align: 'center',
+            baseline: 'middle',
+            stroke: true,
+            strokeColor: '#000000',
+            strokeWidth: 4
+        }));
+        scene.add(winDisplay);
+
+        // Track dash state for particles
+        const controller = player.getComponent(TopDownController);
+        let wasDashing = false;
+
+        // Custom scene update
+        const originalUpdate = scene.update.bind(scene);
+        scene.update = function(dt) {
+            // Update input
+            scene.input.update(camera);
+            
+            // Update camera
+            camera.update(dt);
+            
+            // Detect collisions
+            scene.physics.detectCollisions();
+            
+            // Emit dash trail particles
+            if (controller.isDashing) {
+                dashTrail.autoEmit = true;
+            } else if (wasDashing) {
+                dashTrail.autoEmit = false;
+            }
+            wasDashing = controller.isDashing;
+            
+            // Update game objects
+            originalUpdate(dt);
+            
+            // Update UI positions (UI doesn't move with camera)
+            const itemsWorldPos = camera.screenToWorld(50, 50);
+            itemsDisplay.x = itemsWorldPos.x;
+            itemsDisplay.y = itemsWorldPos.y;
+            
+            const winWorldPos = camera.screenToWorld(400, 300);
+            winDisplay.x = winWorldPos.x;
+            winDisplay.y = winWorldPos.y;
+        };
+
+        // Add scene and start
+        engine.addScene('topdown', scene);
+        engine.setScene('topdown');
+        engine.start();
+
+        console.log('🗺️ Top-Down Demo Started!');
+        console.log('Move with WASD, Shift to dash');
+    </script>
+</body>
+</html>
